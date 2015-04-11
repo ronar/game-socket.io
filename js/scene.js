@@ -3,7 +3,8 @@ var canv = document.getElementById('canv'),
     ctx = canv.getContext('2d'),
     cliShips = [],
     maxSpeed = 5.1,
-    a = 1.1,
+    acc = 0.1,
+    grav = 0.015,
     img,
     t = 0.0,
     dt = 16.7,
@@ -29,6 +30,24 @@ vec2.limit = function (out, v, high) {
     return out;
 }
 
+vec2.lowLimit = function (out, v, low) {
+    'use strict';
+
+    var x = v[0],
+        y = v[1];
+
+    var len = x*x + y*y;
+
+    if (len < low*low && len > 0) {
+        out[0] = x;
+        out[1] = y;
+        vec2.normalize(out, out);
+        vec2.scale(out, out, low);
+    }
+    
+    return out;
+}
+
 vec2.rotate2d = function (out, v, rads) {
     'use strict';
 
@@ -48,15 +67,15 @@ vec2.rotate2d = function (out, v, rads) {
 
 var ship = function (id, lok, mass) {
     this.id = id;
-    this.a = 0.1;
-    this.g = 0.015;
+    //this.a = 0.1;
+    //this.g = 0.015;
     this.coord = lok;
     this.servCoord = lok;
     this.vel0 = vec2.fromValues(0, 0);
     this.vel = vec2.fromValues(0, 0);
-    this.accel = vec2.fromValues(this.a, 0);
+    this.accel = vec2.fromValues(acc, 0);
     this.gravity = vec2.fromValues(0, 0);
-    this.newAccel = vec2.fromValues(this.a, 0);
+    this.newAccel = vec2.fromValues(acc, 0);
     this.ang = -1,57079632679489661;
     this.servVel = lok;
     this.oldV = vec2.fromValues(500, 300); // used for point of returning
@@ -84,13 +103,14 @@ var ship = function (id, lok, mass) {
         var forces;
         
         vec2.negate(this.gravity, this.newAccel);
-        vec2.scale(this.gravity, this.gravity, this.g);
+        vec2.scale(this.gravity, this.gravity, grav);
         //vec2.scale(this.gravity, this.gravity, 1 / this.mass);
         vec2.add(this.newAccel, this.newAccel, this.gravity);
-        forces = vec2.add(vec2.create(), this.accel, this.gravity);
+        vec2.lowLimit(this.newAccel, this.newAccel, 0.0001);
+        forces = vec2.add(vec2.create(), this.accel, grav);
         //this.addForce(this.accel);
         vec2.lerp(this.accel, this.accel, this.newAccel, a1);
-        vec2.lerp(this.vel, this.vel0, vec2.scale(vec2.create(), this.accel, (dt - t) / 1000), a1 / 120);
+        vec2.lerp(this.vel, this.vel0, vec2.scale(vec2.create(), this.accel, (dt - t) / 1000), a1 / 60);
         this.vel0 = this.vel;
         vec2.limit(this.vel, this.vel, maxSpeed);
         vec2.add(this.coord, this.coord, this.vel);
@@ -99,19 +119,14 @@ var ship = function (id, lok, mass) {
            
         a1 += 0.0167;
         if (a1 > 1) {
-            a1 = 0;
+            a1 = 0.5;
             
 
         }
     }
 }
 
-var ang = 0,
-    lInt,
-    thetaAng = 0,
-    oldSvx = 0,
-    oldSvy = 0,
-    a = 0,
+var thetaAng = 0,
     a1 = 0;
     
 ctx.lineWidth = 5;
@@ -167,7 +182,6 @@ var renderingLoop = function () {
     ctx.lineTo(cliShips[0].coord[0] + 29 + cliShips[0].newAccel[0] * 150, cliShips[0].coord[1] + 33 + cliShips[0].newAccel[1] * 150);
     ctx.stroke();
 
-    a += 0.01;
     a1 += 0.0167;
     if (a1 >= 1) {
        a1 = 0;
@@ -208,14 +222,12 @@ function queueNewFrame () {
 ctx.font = '16px arial';
 ctx.textAlign = 'center';
 
-var newShip = new ship(0, vec2.fromValues(200, 200), 0.5);
+var newShip = new ship(0, vec2.fromValues(200, 200), 50);
 cliShips.push(newShip);
 
-var prevKey = 0;
-var keyPr;
-var dTime = 0;
-var speed = 0.1;
-var a = 0.1;
+var prevKey = 0,
+    keyPr,
+    dTime = 0;
 
 document.onkeydown = function (e) {
     e.preventDefault();
@@ -224,13 +236,13 @@ document.onkeydown = function (e) {
     if (keyPr == 37) {
         cliShips[0].ang -= 0.1;
         //if (cliShips[0].ang < -(2 * Math.PI)) cliShips[0].ang += 2 * Math.PI;
-        vec2.rotate2d(cliShips[0].newAccel, cliShips[0].accel, -Math.PI / 15);
+        vec2.rotate2d(cliShips[0].newAccel, cliShips[0].newAccel, -Math.PI / 30);
     } else if (keyPr == 38) {
         vec2.scale(cliShips[0].newAccel, cliShips[0].newAccel, 1.18);
     } else if (keyPr == 39) {
         cliShips[0].ang += 0.1;
         //if (cliShips[0].ang > 2 * Math.PI) cliShips[0].ang -= 2 * Math.PI;
-        vec2.rotate2d(cliShips[0].newAccel, cliShips[0].accel, Math.PI / 15);
+        vec2.rotate2d(cliShips[0].newAccel, cliShips[0].newAccel, Math.PI / 30);
     } else if (keyPr == 40) {
     }
 			
