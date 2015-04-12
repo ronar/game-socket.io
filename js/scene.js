@@ -3,6 +3,7 @@ var canv = document.getElementById('canv'),
     ctx = canv.getContext('2d'),
     cliShips = [],
     maxSpeed = 5.1,
+    maxAccel = 1.0,
     acc = 0.1,
     grav = 0.015,
     img,
@@ -133,6 +134,26 @@ ctx.lineWidth = 5;
     
 var renderingLoop = function () {
     computeFPS();
+
+    if (keyPressed[37] == true) {
+        cliShips[0].ang -= 0.1;
+        //if (cliShips[0].ang < -(2 * Math.PI)) cliShips[0].ang += 2 * Math.PI;
+        vec2.rotate2d(cliShips[0].newAccel, cliShips[0].newAccel, -Math.PI / 30);
+    }
+    
+    if (keyPressed[38] == true) {
+        vec2.scale(cliShips[0].newAccel, cliShips[0].newAccel, 1.18);
+        vec2.limit(cliShips[0].newAccel, cliShips[0].newAccel, maxAccel);
+    }
+    
+    if (keyPressed[39] == true) {
+        cliShips[0].ang += 0.1;
+        //if (cliShips[0].ang > 2 * Math.PI) cliShips[0].ang -= 2 * Math.PI;
+        vec2.rotate2d(cliShips[0].newAccel, cliShips[0].newAccel, Math.PI / 30);
+    }
+    
+    if (keyPressed[40] == true) {
+    }
         
     // Clear the canvas
     ctx.save();
@@ -187,6 +208,8 @@ var renderingLoop = function () {
        a1 = 0;
     }
 
+    angle.innerHTML = keyPressed[37] + ' ' + keyPressed[38] + ' ' + keyPressed[39] + ' ' + keyPressed[40];
+      
     queueNewFrame(renderingLoop);	
 }
 		
@@ -227,24 +250,14 @@ cliShips.push(newShip);
 
 var prevKey = 0,
     keyPr,
+    keyPressed = {},
     dTime = 0;
 
 document.onkeydown = function (e) {
     e.preventDefault();
     keyPr = e.keyCode;
- 
-    if (keyPr == 37) {
-        cliShips[0].ang -= 0.1;
-        //if (cliShips[0].ang < -(2 * Math.PI)) cliShips[0].ang += 2 * Math.PI;
-        vec2.rotate2d(cliShips[0].newAccel, cliShips[0].newAccel, -Math.PI / 30);
-    } else if (keyPr == 38) {
-        vec2.scale(cliShips[0].newAccel, cliShips[0].newAccel, 1.18);
-    } else if (keyPr == 39) {
-        cliShips[0].ang += 0.1;
-        //if (cliShips[0].ang > 2 * Math.PI) cliShips[0].ang -= 2 * Math.PI;
-        vec2.rotate2d(cliShips[0].newAccel, cliShips[0].newAccel, Math.PI / 30);
-    } else if (keyPr == 40) {
-    }
+
+    keyPressed[keyPr] = true;
 			
     if (prevKey != e.keyCode) {
         prevKey = e.keyCode;				
@@ -264,6 +277,9 @@ document.onkeydown = function (e) {
 
 document.onkeyup = function (e) {
     keyPr = 0;
+    
+    keyPressed[e.keyCode] = false;
+    
     if (prevKey != 0) {
         prevKey = 0;
         clearInterval(intId);
