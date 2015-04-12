@@ -11,7 +11,7 @@ var canv = document.getElementById('canv'),
     t = 0.0,
     dt = 16.7,
     intId,
-    sendInterval = 200,
+    sendInterval = 50,
     maxDesync = 10;
 
 vec2.limit = function (out, v, high) {
@@ -78,7 +78,7 @@ var ship = function (id, lok, mass) {
     this.newAccel = vec2.fromValues(acc, 0);
     this.ang = -1.57079632679489661;
     this.servVel = lok;
-    this.oldV = vec2.fromValues(500, 300); // used for point of returning
+    this.oldV = vec2.fromValues(0, 0); // used for point of returning
     this.newV = vec2.create();
     this.oldSv = vec2.fromValues(0, 0); // used for smooth rotation, stores the vector before rotation
     
@@ -118,7 +118,7 @@ var ship = function (id, lok, mass) {
         dt = (new Date()).getTime();
            
         a1 += 0.0167;
-        if (a1 > 1) {
+        if (a1 > 0.9999) {
             a1 = 0.5;
             
 
@@ -127,8 +127,9 @@ var ship = function (id, lok, mass) {
 }
 
 var thetaAng = 0,
-    a1 = 0,
-    dTime = 0;
+    alpha = 0,
+    dTime = 0,
+    tmpVec = vec2.create();
     
 ctx.lineWidth = 5;
     
@@ -178,7 +179,7 @@ var renderingLoop = function () {
 
     cliShips[i].move();
     if (i != 0)
-        vec2.lerp(cliShips[i].coord, cliShips[i].coord, cliShips[i].servCoord, a1 / 60);
+        vec2.lerp(cliShips[i].coord, cliShips[i].coord, cliShips[i].servCoord, alpha / 60);
 
     ctx.fillText(cliShips[i].id, cliShips[i].coord[0], cliShips[i].coord[1]);
     //ctx.fillText('vel[0]: ' + cliShips[i].vel[0] + ' vel[1]: ' + cliShips[i].vel[1], cliShips[i].coord[0], cliShips[i].coord[1]-20);
@@ -186,8 +187,12 @@ var renderingLoop = function () {
     //ctx.fillText('accel[0]: ' + cliShips[i].accel[0] + ' accel[1]: ' + cliShips[i].accel[1], cliShips[i].coord[0], cliShips[i].coord[1]-60);
     //ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.translate(cliShips[i].coord[0] + 29, cliShips[i].coord[1] + 33);
-    var tmpVec = vec2.create();
-    vec2.lerp(tmpVec, cliShips[i].accel, cliShips[i].newAccel, 0.5);
+    
+    if (i != 0) {
+        vec2.lerp(tmpVec, cliShips[i].oldV, vec2.lerp(vec2.create(), cliShips[i].accel, cliShips[i].newAccel, 0.5), alpha);
+    }
+    else
+        vec2.lerp(tmpVec, cliShips[i].accel, cliShips[i].newAccel, alpha);
     ctx.rotate(Math.atan2(tmpVec[1], tmpVec[0]) - 1.57079632679489661);
 
     ctx.drawImage(cliShips[i].img, -29, -33);
@@ -216,9 +221,9 @@ var renderingLoop = function () {
         console.log('Sended! now = ' + dTime);
     }
 
-    a1 += 0.0167;
-    if (a1 > 1) {
-       a1 = 0.0;
+    alpha += 0.0167;
+    if (alpha > 0.9999) {
+       alpha = 0.0167;
        cliShips[i].oldV = cliShips[i].accel;
     }
 }
@@ -328,7 +333,7 @@ socket.on('process input', function (data) {
             cliShips[i].newAccel = data.accel;
             cliShips[i].servCoord = data.lok;
             cliShips[i].vel = data.vel;
-            cliShips[i].oldV = cliShips[i].accel;
+            //cliShips[i].oldV = cliShips[i].accel;
         }
     }
 });
